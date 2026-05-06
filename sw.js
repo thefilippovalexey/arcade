@@ -1,4 +1,4 @@
-const CACHE_NAME = 'arcade-shmup-v4';
+const CACHE_NAME = 'arcade-shmup-v5';
 const urlsToCache = [
   '/arcade/',
   '/arcade/index.html',
