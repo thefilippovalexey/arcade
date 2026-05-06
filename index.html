@@ -33,18 +33,26 @@
   .settings-box button{margin-top:20px;width:100%;padding:10px;background:#00ffcc;border:none;border-radius:40px;font-weight:bold}
   #closeSettings{background:#ffaa44;margin-top:10px}
   #pauseBtn{position:absolute;top:max(20px, env(safe-area-inset-top));right:max(20px, env(safe-area-inset-right));background:rgba(0,0,0,0.6);backdrop-filter:blur(4px);border:none;color:#00ffcc;font-size:24px;border-radius:40px;padding:6px 14px;z-index:15;font-weight:bold}
-  @media (max-width:768px){.multiplier-indicator{font-size:18px;padding:4px 12px}#ui{font-size:11px;padding:6px 12px}#ui span{font-size:15px}}
+  #onboarding{position:absolute;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.9);backdrop-filter:blur(10px);display:flex;justify-content:center;align-items:center;z-index:40}
+  .onboarding-box{background:#0f1a24;padding:20px;border-radius:36px;width:90%;max-width:340px;text-align:center;border:1px solid #00ffcc;color:#ccf4ff}
+  .onboarding-box h2{color:#ffd966;margin-top:0}
+  .onboarding-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:20px 0;text-align:left;font-size:14px}
+  .onboarding-item{display:flex;align-items:center;gap:8px}
+  .onboarding-item span:first-child{font-size:24px}
+  #onboardingPlayBtn{background:#00ffcc;border:none;padding:12px 24px;border-radius:40px;font-weight:bold;font-size:18px;margin-top:10px}
+  @media (max-width:768px){.multiplier-indicator{font-size:18px;padding:4px 12px}#ui{font-size:11px;padding:6px 12px}#ui span{font-size:15px}.onboarding-grid{font-size:11px}}
 </style>
 </head>
 <body>
 <div class="game-wrapper">
   <canvas id="c"></canvas>
-  <div id="ui">SCORE: <span>0</span><br>BEST: 0<br>LAST: 0<br>❤️ 1</div>
+  <div id="ui">SCORE: <span>0</span><br>BEST: 0<br>LAST: 0<br>❤️ 3</div>
   <div class="multiplier-indicator" id="multiplierDisplay">x1.0</div>
   <button id="settingsBtn">⚙️</button>
   <button id="pauseBtn">⏸</button>
   <div id="overlay"><div id="panel"><h1>GAME OVER</h1><div id="finalScore"></div><div class="leaderboard" id="leaderboardDiv"></div><button id="restartBtn">RESTART</button></div></div>
-  <div id="settingsOverlay"><div class="settings-box"><h2>Настройки</h2><label>Чувствительность: <span id="sensValue">3000</span></label><input type="range" id="sensitivitySlider" min="1500" max="4500" step="50" value="3000"><button id="saveSettings">Сохранить</button><button id="closeSettings">Назад</button></div></div>
+  <div id="settingsOverlay"><div class="settings-box"><h2>Настройки</h2><label>Чувствительность: <span id="sensValue">4000</span></label><input type="range" id="sensitivitySlider" min="3000" max="5000" step="50" value="4000"><button id="saveSettings">Сохранить</button><button id="closeSettings">Назад</button></div></div>
+  <div id="onboarding"><div class="onboarding-box"><h2>✨ КАК ИГРАТЬ ✨</h2><div class="onboarding-grid"><div class="onboarding-item"><span>🌑</span><span>Уворачивайся</span></div><div class="onboarding-item"><span>🛡️</span><span>Щит — защита</span></div><div class="onboarding-item"><span>⭐</span><span>Множитель x2</span></div><div class="onboarding-item"><span>🧲</span><span>Магнит</span></div><div class="onboarding-item"><span>🐌</span><span>Замедление</span></div><div class="onboarding-item"><span>💨</span><span>Отбрасывание</span></div><div class="onboarding-item"><span>⏳</span><span>Slow врагов</span></div><div class="onboarding-item"><span>❤️</span><span>Доп. жизнь</span></div><div class="onboarding-item"><span>💣</span><span>Бомба</span></div><div class="onboarding-item"><span>💰</span><span>Бонус очки</span></div></div><button id="onboardingPlayBtn">🚀 ИГРАТЬ</button></div></div>
 </div>
 <script>
 (function(){
@@ -62,16 +70,16 @@
   const closeSettings = document.getElementById('closeSettings');
   const settingsBtn = document.getElementById('settingsBtn');
   const pauseBtn = document.getElementById('pauseBtn');
+  const onboardingDiv = document.getElementById('onboarding');
+  const onboardingPlayBtn = document.getElementById('onboardingPlayBtn');
   
-  let sens = parseInt(localStorage.getItem('sensitivity')) || 3000;
+  let sens = parseInt(localStorage.getItem('sensitivity')) || 4000;
   sensitivitySlider.value = sens;
   sensValue.innerText = sens;
   
   let W = window.innerWidth, H = window.innerHeight;
   const dpr = window.devicePixelRatio || 1;
   
-  // тряска камеры
-  let shakeOffset = { x: 0, y: 0 };
   let shakeIntensity = 0;
   
   function resizeCanvas(){
@@ -93,7 +101,7 @@
   
   let targetX = null;
   c.addEventListener('touchstart', (e) => {
-    if(paused) return;
+    if(!running || paused) return;
     e.preventDefault();
     const rect = c.getBoundingClientRect();
     const scaleX = W / rect.width;
@@ -103,7 +111,7 @@
     targetX = (cx - rect.left) * scaleX;
   });
   c.addEventListener('touchmove', (e) => {
-    if(paused) return;
+    if(!running || paused) return;
     e.preventDefault();
     const rect = c.getBoundingClientRect();
     const scaleX = W / rect.width;
@@ -119,7 +127,7 @@
   let enemySlowActive = false, enemySlowTimer = 0;
   let running = true;
   let lastScore = 0;
-  let lives = 1;
+  let lives = 3;
   let best = parseInt(localStorage.getItem('best')) || 0;
   let leaderboard = JSON.parse(localStorage.getItem('leaderboard')) || [];
   let repelActive = false, repelTimer = 0;
@@ -178,12 +186,13 @@
     difficulty = 1;
     running = true;
     lastScore = 0;
-    lives = 1;
+    lives = 3;
     repelActive = false;
     repelTimer = 0;
     enemySlowActive = false;
     enemySlowTimer = 0;
     paused = false;
+    pauseBtn.innerText = '⏸';
     startIntervals();
   }
   function gameOver(){
@@ -256,17 +265,30 @@
     if(repelActive){ repelTimer -= dt; if(repelTimer <= 0) repelActive = false; }
     if(enemySlowActive){ enemySlowTimer -= dt; if(enemySlowTimer <= 0) enemySlowActive = false; }
     
+    // СИММЕТРИЧНОЕ УПРАВЛЕНИЕ: сила зависит только от позиции пальца НА ЭКРАНЕ
     if(targetX !== null) {
-        let dx = targetX - player.x;
-        player.vx += dx * 7 * dt;
+        let normalizedPos = targetX / W; // от 0 (левый край) до 1 (правый край)
+        let direction = 0;
+        let force = 0;
+        if (normalizedPos < 0.45) {
+            direction = -1;
+            force = (0.45 - normalizedPos) / 0.45;
+        } else if (normalizedPos > 0.55) {
+            direction = 1;
+            force = (normalizedPos - 0.55) / 0.45;
+        }
+        force = Math.min(1, force);
+        let accelerationForce = force * (sens / 400) * 1800;
+        player.vx += direction * accelerationForce * dt;
     } else {
         let move = 0;
         if(keys['ArrowLeft']) move = -1;
         if(keys['ArrowRight']) move = 1;
         player.vx += move * sens * dt;
     }
+    
     player.vx *= 0.85;
-    player.vx = Math.max(-520, Math.min(520, player.vx));
+    player.vx = Math.max(-800, Math.min(800, player.vx));
     player.x += player.vx * dt;
     player.x = Math.max(24, Math.min(W - 24, player.x));
     
@@ -319,7 +341,7 @@
         if(p.type === 'score'){ const b = 130 * mult; score += b; txt = `+${Math.floor(b)}`; }
         if(p.type === 'repel'){ repelActive = true; repelTimer = 4.7; txt = 'REPEL'; effects.push({ x: player.x, y: player.y-18, text: 'REPEL', life: 0.7 }); }
         if(p.type === 'enemySlow'){ enemySlowActive = true; enemySlowTimer = 3.8; txt = 'ENEMY SLOW'; effects.push({ x: player.x, y: player.y-18, text: 'SLOW ENEMIES', life: 0.7 }); }
-        if(p.type === 'life'){ if(lives < 2) lives = 2; txt = '+1 LIFE'; effects.push({ x: player.x, y: player.y-18, text: 'EXTRA LIFE', life: 0.8 }); }
+        if(p.type === 'life'){ lives++; txt = '+1 LIFE'; effects.push({ x: player.x, y: player.y-18, text: 'EXTRA LIFE', life: 0.8 }); }
         if(p.type === 'bomb'){
           enemies = [];
           txt = 'BOMB!';
@@ -466,9 +488,23 @@
     requestAnimationFrame(anim);
   }
   
-  startGame();
-  lastTime = performance.now();
-  requestAnimationFrame(anim);
+  function init(){
+    if(localStorage.getItem('onboardingSeen') !== 'true'){
+      onboardingDiv.style.display = 'flex';
+    } else {
+      onboardingDiv.style.display = 'none';
+    }
+    startGame();
+    lastTime = performance.now();
+    requestAnimationFrame(anim);
+  }
+  
+  onboardingPlayBtn.onclick = () => {
+    localStorage.setItem('onboardingSeen', 'true');
+    onboardingDiv.style.display = 'none';
+  };
+  
+  init();
   
   if('serviceWorker' in navigator){
     window.addEventListener('load', ()=>{
