@@ -2,19 +2,20 @@
   "name": "ARCADE SHMUP",
   "short_name": "SpaceGame",
   "description": "Космическая аркада-выживатель",
-  "start_url": "/",
+  "start_url": "/arcade/",
+  "scope": "/arcade/",
   "display": "fullscreen",
   "theme_color": "#00ffcc",
   "background_color": "#030507",
   "icons": [
     {
-      "src": "icon-192.png",
+      "src": "/arcade/icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "icon-512.png",
+      "src": "/arcade/icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
