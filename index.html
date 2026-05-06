@@ -10,159 +10,21 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="apple-touch-icon" href="/arcade/icon-512.png">
 <style>
-  * {
-    user-select: none;
-    -webkit-tap-highlight-color: transparent;
-    box-sizing: border-box;
-  }
-
-  body {
-    margin: 0;
-    min-height: 100vh;
-    background: radial-gradient(circle at 20% 30%, #0a0c15, #030507);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    font-family: 'Segoe UI', 'Orbitron', monospace;
-    overflow: hidden;
-    touch-action: none;
-    position: fixed;
-    width: 100%;
-    height: 100%;
-  }
-
-  .game-wrapper {
-    position: relative;
-    width: 100%;
-    height: 100%;
-    background: #030507;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-  }
-
-  canvas {
-    display: block;
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
-    background: #030507;
-    cursor: none;
-    touch-action: none;
-  }
-
-  #ui {
-    position: absolute;
-    top: max(12px, env(safe-area-inset-top));
-    left: max(12px, env(safe-area-inset-left));
-    background: rgba(0, 0, 0, 0.6);
-    backdrop-filter: blur(8px);
-    padding: 8px 16px;
-    border-radius: 32px;
-    font-family: 'Orbitron', monospace;
-    font-weight: bold;
-    font-size: 14px;
-    color: #b3ffe0;
-    text-shadow: 0 0 4px #00ffaa;
-    border-left: 2px solid #00ffcc;
-    letter-spacing: 0.5px;
-    pointer-events: none;
-    z-index: 10;
-    white-space: nowrap;
-  }
-
-  #ui span {
-    color: #ffd966;
-    font-size: 18px;
-  }
-
-  #overlay {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    display: none;
-    justify-content: center;
-    align-items: center;
-    background: rgba(0, 0, 0, 0.8);
-    backdrop-filter: blur(8px);
-    z-index: 20;
-  }
-
-  #panel {
-    text-align: center;
-    background: rgba(10, 20, 25, 0.95);
-    padding: 24px 32px;
-    border-radius: 48px;
-    width: 85%;
-    max-width: 320px;
-    border: 1px solid rgba(0, 255, 200, 0.5);
-  }
-
-  #panel h1 {
-    margin: 0 0 8px;
-    font-size: 36px;
-    background: linear-gradient(135deg, #ffd966, #00ffcc);
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
-  }
-
-  #finalScore {
-    font-size: 20px;
-    margin: 16px 0;
-    color: #ccf4ff;
-  }
-
-  .leaderboard {
-    margin-top: 16px;
-    text-align: left;
-    border-top: 1px solid rgba(0,255,200,0.3);
-    padding-top: 12px;
-    font-size: 14px;
-    color: #aaffdd;
-  }
-
-  .leaderboard h3 {
-    margin: 0 0 6px;
-    font-size: 16px;
-    text-align: center;
-    color: #ffd966;
-  }
-
-  #restartBtn {
-    margin-top: 16px;
-    padding: 10px 24px;
-    font-size: 18px;
-    border: none;
-    border-radius: 60px;
-    background: linear-gradient(90deg, #00ffcc, #00b386);
-    color: #0a1a1f;
-    font-weight: bold;
-    width: 80%;
-  }
-
-  .multiplier-indicator {
-    position: absolute;
-    bottom: max(16px, env(safe-area-inset-bottom));
-    right: max(16px, env(safe-area-inset-right));
-    background: rgba(0,0,0,0.6);
-    backdrop-filter: blur(8px);
-    padding: 6px 16px;
-    border-radius: 32px;
-    font-size: 22px;
-    color: #ffaa44;
-    font-weight: bold;
-    pointer-events: none;
-    z-index: 10;
-  }
-
-  @media (max-width: 768px) {
-    .multiplier-indicator { font-size: 18px; padding: 4px 12px; }
-    #ui { font-size: 11px; padding: 6px 12px; }
-    #ui span { font-size: 15px; }
-  }
+  *{user-select:none;-webkit-tap-highlight-color:transparent;box-sizing:border-box}
+  body{margin:0;min-height:100vh;background:radial-gradient(circle at 20% 30%,#0a0c15,#030507);display:flex;justify-content:center;align-items:center;font-family:'Segoe UI','Orbitron',monospace;overflow:hidden;touch-action:none;position:fixed;width:100%;height:100%}
+  .game-wrapper{position:relative;width:100%;height:100%;background:#030507;display:flex;justify-content:center;align-items:center}
+  canvas{display:block;width:100%;height:100%;object-fit:contain;background:#030507;cursor:none;touch-action:none}
+  #ui{position:absolute;top:max(12px, env(safe-area-inset-top));left:max(12px, env(safe-area-inset-left));background:rgba(0,0,0,0.6);backdrop-filter:blur(8px);padding:8px 16px;border-radius:32px;font-family:'Orbitron',monospace;font-weight:bold;font-size:14px;color:#b3ffe0;border-left:2px solid #00ffcc;pointer-events:none;z-index:10;white-space:nowrap}
+  #ui span{color:#ffd966;font-size:18px}
+  #overlay{position:absolute;top:0;left:0;width:100%;height:100%;display:none;justify-content:center;align-items:center;background:rgba(0,0,0,0.8);backdrop-filter:blur(8px);z-index:20}
+  #panel{text-align:center;background:rgba(10,20,25,0.95);padding:24px 32px;border-radius:48px;width:85%;max-width:320px;border:1px solid rgba(0,255,200,0.5)}
+  #panel h1{margin:0 0 8px;font-size:36px;background:linear-gradient(135deg,#ffd966,#00ffcc);-webkit-background-clip:text;background-clip:text;color:transparent}
+  #finalScore{font-size:20px;margin:16px 0;color:#ccf4ff}
+  .leaderboard{margin-top:16px;text-align:left;border-top:1px solid rgba(0,255,200,0.3);padding-top:12px;font-size:14px;color:#aaffdd}
+  .leaderboard h3{margin:0 0 6px;font-size:16px;text-align:center;color:#ffd966}
+  #restartBtn{margin-top:16px;padding:10px 24px;font-size:18px;border:none;border-radius:60px;background:linear-gradient(90deg,#00ffcc,#00b386);color:#0a1a1f;font-weight:bold;width:80%}
+  .multiplier-indicator{position:absolute;bottom:max(16px, env(safe-area-inset-bottom));right:max(16px, env(safe-area-inset-right));background:rgba(0,0,0,0.6);backdrop-filter:blur(8px);padding:6px 16px;border-radius:32px;font-size:22px;color:#ffaa44;font-weight:bold;pointer-events:none;z-index:10}
+  @media (max-width:768px){.multiplier-indicator{font-size:18px;padding:4px 12px}#ui{font-size:11px;padding:6px 12px}#ui span{font-size:15px}}
 </style>
 </head>
 <body>
@@ -202,9 +64,7 @@
   window.addEventListener('keydown', e => keys[e.key] = true);
   window.addEventListener('keyup', e => keys[e.key] = false);
   
-  // ========== МОБИЛЬНОЕ УПРАВЛЕНИЕ С МГНОВЕННЫМ ОТКЛИКОМ ==========
-  let targetX = null;  // целевая позиция пальца
-  let smoothX = null;  // сглаженная позиция
+  let targetX = null;
   
   c.addEventListener('touchstart', (e) => {
     e.preventDefault();
@@ -214,7 +74,6 @@
     if(cx < rect.left) cx = rect.left;
     if(cx > rect.right) cx = rect.right;
     targetX = (cx - rect.left) * scaleX;
-    smoothX = targetX;
   });
   
   c.addEventListener('touchmove', (e) => {
@@ -229,10 +88,8 @@
   
   c.addEventListener('touchend', () => {
     targetX = null;
-    smoothX = null;
   });
   
-  // ========== ИГРОВОЙ ДВИЖОК ==========
   let player, enemies, powers, effects, trails, stars;
   let score = 0, mult = 1, hitStop = 0, slowFactor = 1, difficulty = 1;
   let enemySlowActive = false, enemySlowTimer = 0;
@@ -330,28 +187,24 @@
     if(repelActive){ repelTimer -= dt; if(repelTimer <= 0) repelActive = false; }
     if(enemySlowActive){ enemySlowTimer -= dt; if(enemySlowTimer <= 0) enemySlowActive = false; }
     
-    // ========== НОВЫЙ МЕХАНИЗМ УПРАВЛЕНИЯ (МГНОВЕННЫЙ) ==========
+    // ========== УПРАВЛЕНИЕ: ПЛАВНОЕ, НО БЕЗ ТЕЛЕПОРТОВ ==========
     if(targetX !== null) {
-      // Сглаживание для плавности без лагов
-      if(smoothX === null) smoothX = targetX;
-      smoothX = smoothX * 0.7 + targetX * 0.3;
-      // Прямая установка позиции без физики инерции
-      player.x = smoothX;
+      let dx = targetX - player.x;
+      let maxDelta = 25; // максимум пикселей за кадр (1500 в секунду при 60fps)
+      dx = Math.max(-maxDelta, Math.min(maxDelta, dx));
+      player.x += dx;
     } else {
-      // Клавиатура (если нужна)
       let move = 0;
       if(keys['ArrowLeft']) move = -1;
       if(keys['ArrowRight']) move = 1;
-      player.x += move * 550 * dt;
+      player.x += move * 450 * dt;
     }
     
     // Границы
     player.x = Math.max(24, Math.min(W - 24, player.x));
     
-    // Шлейфы
     if(Math.random() < 0.4) trails.push({ x: player.x, y: player.y, r: 7, life: 0.3, color: '#00ff9c' });
     
-    // Враги
     for(let i=0;i<enemies.length;i++){
       const e = enemies[i];
       let spd = e.s * dt * (enemySlowActive ? 0.4 : 1) * slowFactor;
@@ -376,7 +229,6 @@
     }
     enemies = enemies.filter(e => !e.dead && e.y < H + 60);
     
-    // Бонусы
     for(let i=0;i<powers.length;i++){
       const p = powers[i];
       p.y += p.s * dt * slowFactor;
