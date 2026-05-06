@@ -32,6 +32,7 @@
   input[type="range"]{width:100%;background:#00ffcc;height:4px;border-radius:4px}
   .settings-box button{margin-top:20px;width:100%;padding:10px;background:#00ffcc;border:none;border-radius:40px;font-weight:bold}
   #closeSettings{background:#ffaa44;margin-top:10px}
+  #pauseBtn{position:absolute;top:max(20px, env(safe-area-inset-top));right:max(20px, env(safe-area-inset-right));background:rgba(0,0,0,0.6);backdrop-filter:blur(4px);border:none;color:#00ffcc;font-size:24px;border-radius:40px;padding:6px 14px;z-index:15;font-weight:bold}
   @media (max-width:768px){.multiplier-indicator{font-size:18px;padding:4px 12px}#ui{font-size:11px;padding:6px 12px}#ui span{font-size:15px}}
 </style>
 </head>
@@ -41,6 +42,7 @@
   <div id="ui">SCORE: <span>0</span><br>BEST: 0<br>LAST: 0<br>❤️ 1</div>
   <div class="multiplier-indicator" id="multiplierDisplay">x1.0</div>
   <button id="settingsBtn">⚙️</button>
+  <button id="pauseBtn">⏸</button>
   <div id="overlay"><div id="panel"><h1>GAME OVER</h1><div id="finalScore"></div><div class="leaderboard" id="leaderboardDiv"></div><button id="restartBtn">RESTART</button></div></div>
   <div id="settingsOverlay"><div class="settings-box"><h2>Настройки</h2><label>Чувствительность: <span id="sensValue">3000</span></label><input type="range" id="sensitivitySlider" min="1500" max="4500" step="50" value="3000"><button id="saveSettings">Сохранить</button><button id="closeSettings">Назад</button></div></div>
 </div>
@@ -59,6 +61,7 @@
   const saveSettings = document.getElementById('saveSettings');
   const closeSettings = document.getElementById('closeSettings');
   const settingsBtn = document.getElementById('settingsBtn');
+  const pauseBtn = document.getElementById('pauseBtn');
   
   let sens = parseInt(localStorage.getItem('sensitivity')) || 3000;
   sensitivitySlider.value = sens;
@@ -66,6 +69,10 @@
   
   let W = window.innerWidth, H = window.innerHeight;
   const dpr = window.devicePixelRatio || 1;
+  
+  // тряска камеры
+  let shakeOffset = { x: 0, y: 0 };
+  let shakeIntensity = 0;
   
   function resizeCanvas(){
     W = window.innerWidth;
@@ -86,6 +93,7 @@
   
   let targetX = null;
   c.addEventListener('touchstart', (e) => {
+    if(paused) return;
     e.preventDefault();
     const rect = c.getBoundingClientRect();
     const scaleX = W / rect.width;
@@ -95,6 +103,7 @@
     targetX = (cx - rect.left) * scaleX;
   });
   c.addEventListener('touchmove', (e) => {
+    if(paused) return;
     e.preventDefault();
     const rect = c.getBoundingClientRect();
     const scaleX = W / rect.width;
@@ -103,7 +112,7 @@
     if(cx > rect.right) cx = rect.right;
     targetX = (cx - rect.left) * scaleX;
   });
-  c.addEventListener('touchend', () => targetX = null);
+  c.addEventListener('touchend', () => { targetX = null; });
   
   let player, enemies, powers, effects, trails, stars;
   let score = 0, mult = 1, hitStop = 0, slowFactor = 1, difficulty = 1;
@@ -115,6 +124,7 @@
   let leaderboard = JSON.parse(localStorage.getItem('leaderboard')) || [];
   let repelActive = false, repelTimer = 0;
   let enemyInterval = null, powerInterval = null;
+  let paused = false;
   
   function updateLeaderboard(scr){
     leaderboard.push(scr);
@@ -136,8 +146,8 @@
   }
   function startIntervals(){
     clearIntervals();
-    enemyInterval = setInterval(()=>{ if(running) spawnEnemy(); }, 380);
-    powerInterval = setInterval(()=>{ if(running) spawnPower(); }, 2800);
+    enemyInterval = setInterval(()=>{ if(running && !paused) spawnEnemy(); }, 440);
+    powerInterval = setInterval(()=>{ if(running && !paused) spawnPower(); }, 2800);
   }
   function spawnEnemy(){
     if(!running) return;
@@ -150,7 +160,7 @@
   }
   function spawnPower(){
     if(!running) return;
-    const types = ['shield','score','mult','magnet','slow','repel','enemySlow','life'];
+    const types = ['shield','score','mult','magnet','slow','repel','enemySlow','life','bomb'];
     powers.push({ x: Math.random() * W, y: -25, r: 14, s: 110, type: types[Math.floor(Math.random() * types.length)] });
   }
   function startGame(){
@@ -173,6 +183,7 @@
     repelTimer = 0;
     enemySlowActive = false;
     enemySlowTimer = 0;
+    paused = false;
     startIntervals();
   }
   function gameOver(){
@@ -192,6 +203,10 @@
   restartBtn.onclick = restartGame;
   overlay.addEventListener('click', restartGame);
   function dist(a,b){ return Math.hypot(a.x - b.x, a.y - b.y); }
+  
+  function applyShake(intensity){
+    shakeIntensity = intensity;
+  }
   
   function drawEnemy(x,y,r){
     ctx.save();
@@ -223,12 +238,14 @@
     else if(type==='enemySlow') emoji = '⏳';
     else if(type==='life') emoji = '❤️';
     else if(type==='score') emoji = '💰';
+    else if(type==='bomb') emoji = '💣';
     ctx.fillStyle = '#ffffff';
     ctx.fillText(emoji, x, y);
     ctx.restore();
   }
   
   function update(dt){
+    if(paused) return;
     if(hitStop > 0){ hitStop -= dt; return; }
     if(!running) return;
     difficulty = Math.min(3.5, difficulty + dt * 0.02);
@@ -273,12 +290,14 @@
           hitStop = 0.05;
           if(navigator.vibrate) navigator.vibrate(30);
           effects.push({ x: player.x, y: player.y, text: 'SHIELD', life: 0.5 });
+          applyShake(6);
         } else if(lives > 1) {
           lives--;
           e.dead = true;
           hitStop = 0.1;
           effects.push({ x: player.x, y: player.y, text: '-1 LIFE', life: 0.8 });
           if(navigator.vibrate) navigator.vibrate(50);
+          applyShake(6);
         } else {
           gameOver();
         }
@@ -301,6 +320,12 @@
         if(p.type === 'repel'){ repelActive = true; repelTimer = 4.7; txt = 'REPEL'; effects.push({ x: player.x, y: player.y-18, text: 'REPEL', life: 0.7 }); }
         if(p.type === 'enemySlow'){ enemySlowActive = true; enemySlowTimer = 3.8; txt = 'ENEMY SLOW'; effects.push({ x: player.x, y: player.y-18, text: 'SLOW ENEMIES', life: 0.7 }); }
         if(p.type === 'life'){ if(lives < 2) lives = 2; txt = '+1 LIFE'; effects.push({ x: player.x, y: player.y-18, text: 'EXTRA LIFE', life: 0.8 }); }
+        if(p.type === 'bomb'){
+          enemies = [];
+          txt = 'BOMB!';
+          effects.push({ x: player.x, y: player.y-18, text: 'ALL ENEMIES DESTROYED', life: 0.8 });
+          applyShake(5);
+        }
         effects.push({ x: player.x, y: player.y, text: txt, life: 0.9 });
         p.dead = true;
       }
@@ -384,6 +409,14 @@
   }
   
   function draw(){
+    ctx.save();
+    if(shakeIntensity > 0){
+      let xOff = (Math.random() - 0.5) * shakeIntensity;
+      let yOff = (Math.random() - 0.5) * shakeIntensity;
+      ctx.translate(xOff, yOff);
+      shakeIntensity *= 0.8;
+      if(shakeIntensity < 0.5) shakeIntensity = 0;
+    }
     ctx.clearRect(0,0,W,H);
     const grad = ctx.createLinearGradient(0,0,0,H);
     grad.addColorStop(0,'#0a1922');
@@ -413,6 +446,15 @@
     }
     ctx.globalCompositeOperation = 'source-over';
     ui.innerHTML = `SCORE: <span>${Math.floor(score)}</span><br>BEST: ${best}<br>LAST: ${lastScore||0}<br>❤️ ${lives}`;
+    if(paused){
+      ctx.fillStyle = 'rgba(0,0,0,0.7)';
+      ctx.fillRect(0,0,W,H);
+      ctx.font = 'bold 36px "Orbitron", monospace';
+      ctx.fillStyle = '#00ffcc';
+      ctx.textAlign = 'center';
+      ctx.fillText('PAUSE', W/2, H/2);
+    }
+    ctx.restore();
   }
   
   let lastTime = 0;
@@ -441,6 +483,11 @@
     sens = parseInt(sensitivitySlider.value);
     localStorage.setItem('sensitivity', sens);
     settingsOverlay.style.display = 'none';
+  };
+  pauseBtn.onclick = () => {
+    if(!running) return;
+    paused = !paused;
+    pauseBtn.innerText = paused ? '▶' : '⏸';
   };
 })();
 </script>
