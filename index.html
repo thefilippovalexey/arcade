@@ -5,11 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>ARCADE SHMUP</title>
 <!-- PWA -->
-<link rel="manifest" href="/arcade/manifest.json">
+<link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#00ffcc">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<link rel="apple-touch-icon" href="/arcade/icon-512.png">
+<link rel="apple-touch-icon" href="icon-512.png">
 <style>
   * {
     user-select: none;
@@ -26,7 +26,7 @@
     align-items: center;
     font-family: 'Segoe UI', 'Orbitron', monospace;
     overflow: hidden;
-    touch-action: none; /* отключаем прокрутку страницы */
+    touch-action: none;
     position: fixed;
     width: 100%;
     height: 100%;
@@ -159,7 +159,6 @@
     z-index: 10;
   }
 
-  /* Мобильная оптимизация — скрываем лишние свечения на слабых устройствах */
   @media (max-width: 768px) {
     .multiplier-indicator { font-size: 18px; padding: 4px 12px; }
     #ui { font-size: 11px; padding: 6px 12px; }
@@ -204,10 +203,8 @@
       c.style.width = W + "px";
       c.style.height = H + "px";
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      // перезапустим игру с новыми размерами, если она активна
-      if (running && typeof startGame === 'function') {
-        // не рестартим полностью, просто обновим позицию плеера
-        if(player) player.x = Math.min(W-20, Math.max(20, player.x));
+      if (running && player) {
+        player.x = Math.min(W - 24, Math.max(24, player.x));
       }
     }
 
@@ -216,10 +213,8 @@
     });
     resizeCanvas();
 
-    // Мобильное управление --- плавное, без рывков
     let keys = {};
     let touchX = null;
-    let lastTouchX = null;
     
     window.addEventListener("keydown", e => keys[e.key] = true);
     window.addEventListener("keyup", e => keys[e.key] = false);
@@ -232,7 +227,6 @@
       if(clientX < rect.left) clientX = rect.left;
       if(clientX > rect.right) clientX = rect.right;
       touchX = (clientX - rect.left) * scaleX;
-      lastTouchX = touchX;
     });
     
     c.addEventListener("touchmove", (e) => {
@@ -243,15 +237,12 @@
       if(clientX < rect.left) clientX = rect.left;
       if(clientX > rect.right) clientX = rect.right;
       touchX = (clientX - rect.left) * scaleX;
-      lastTouchX = touchX;
     });
     
     c.addEventListener("touchend", () => {
       touchX = null;
-      lastTouchX = null;
     });
     
-    // Игровое состояние
     let player, enemies, powers, effects, trails, stars;
     let score = 0, mult = 1, hitStop = 0, shake = 0, slowFactor = 1, difficulty = 1;
     let enemySlowActive = false, enemySlowTimer = 0;
@@ -259,7 +250,6 @@
     let lastScore = 0;
     let best = +localStorage.getItem("best") || 0;
     
-    // leaderboard
     let leaderboard = JSON.parse(localStorage.getItem("leaderboard")) || [];
     function updateLeaderboard(scr){
       leaderboard.push(scr);
@@ -285,8 +275,7 @@
     }
     
     function startIntervals(){
-      if(enemyInterval) clearInterval(enemyInterval);
-      if(powerInterval) clearInterval(powerInterval);
+      clearIntervals();
       enemyInterval = setInterval(()=>{ if(running) spawnEnemy(); }, 380);
       powerInterval = setInterval(()=>{ if(running) spawnPower(); }, 2800);
     }
@@ -314,7 +303,6 @@
       effects = [];
       trails = [];
       stars = [];
-      // меньше звезд для оптимизации
       for(let i=0;i<38;i++) stars.push({ x: Math.random() * W, y: Math.random() * H, s: Math.random() * 1.2 + 0.3 });
       score = 0;
       mult = 1;
@@ -375,23 +363,19 @@
       if(keys["ArrowRight"]) moveSpeed = 1;
       
       if(touchX !== null){
-        let targetX = touchX;
-        let dx = targetX - player.x;
+        let dx = touchX - player.x;
         player.vx += dx * 7 * dt;
       } else {
         player.vx += moveSpeed * 1800 * dt;
       }
       
-      // плавное торможение и ограничение
       player.vx *= 0.85;
       player.vx = Math.max(-520, Math.min(520, player.vx));
       player.x += player.vx * dt;
       player.x = Math.max(24, Math.min(W - 24, player.x));
       
-      // шлейфы — реже, для производительности
       if(Math.random() < 0.4) trails.push({ x: player.x, y: player.y, r: 7, life: 0.3, color: "#00ff9c" });
       
-      // враги
       for(let i=0; i<enemies.length; i++){
         let e = enemies[i];
         let spd = e.s * dt * (enemySlowActive ? 0.4 : 1) * slowFactor;
@@ -420,7 +404,6 @@
       }
       enemies = enemies.filter(e => !e.dead && e.y < H + 60);
       
-      // бонусы
       for(let i=0; i<powers.length; i++){
         let p = powers[i];
         p.y += p.s * dt * slowFactor;
@@ -544,7 +527,6 @@
       for(let t of trails){ ctx.globalAlpha = Math.max(0, t.life); circle(t.x, t.y, t.r, t.color); }
       ctx.globalAlpha = 1;
       
-      // игрок
       ctx.shadowBlur = 6;
       ctx.shadowColor = "#00ffcc";
       circle(player.x, player.y, 15, "#00ff9c");
@@ -580,10 +562,9 @@
     lastTimestamp = performance.now();
     requestAnimationFrame(gameLoop);
     
-    // Регистрация SW для PWA
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/arcade/sw.js').then(reg => {
+        navigator.serviceWorker.register('sw.js').then(reg => {
           console.log('SW registered', reg);
         }).catch(err => console.log('SW error', err));
       });
