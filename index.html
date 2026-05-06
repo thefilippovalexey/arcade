@@ -24,15 +24,25 @@
   .leaderboard h3{margin:0 0 6px;font-size:16px;text-align:center;color:#ffd966}
   #restartBtn{margin-top:16px;padding:10px 24px;font-size:18px;border:none;border-radius:60px;background:linear-gradient(90deg,#00ffcc,#00b386);color:#0a1a1f;font-weight:bold;width:80%}
   .multiplier-indicator{position:absolute;bottom:max(16px, env(safe-area-inset-bottom));right:max(16px, env(safe-area-inset-right));background:rgba(0,0,0,0.6);backdrop-filter:blur(8px);padding:6px 16px;border-radius:32px;font-size:22px;color:#ffaa44;font-weight:bold;pointer-events:none;z-index:10}
+  #settingsBtn{position:absolute;bottom:20px;left:20px;background:rgba(0,0,0,0.6);backdrop-filter:blur(4px);border:none;color:#00ffcc;font-size:24px;border-radius:40px;padding:6px 14px;z-index:15;font-weight:bold}
+  #settingsOverlay{position:absolute;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);backdrop-filter:blur(10px);display:none;justify-content:center;align-items:center;z-index:30}
+  .settings-box{background:#0f1a24;padding:20px;border-radius:36px;width:280px;text-align:left;border:1px solid #00ffcc;color:#ccf4ff}
+  .settings-box h2{text-align:center;margin-top:0;color:#ffd966}
+  .settings-box label{display:block;margin:15px 0 5px}
+  input[type="range"]{width:100%;background:#00ffcc;height:4px;border-radius:4px}
+  .settings-box button{margin-top:20px;width:100%;padding:10px;background:#00ffcc;border:none;border-radius:40px;font-weight:bold}
+  #closeSettings{background:#ffaa44;margin-top:10px}
   @media (max-width:768px){.multiplier-indicator{font-size:18px;padding:4px 12px}#ui{font-size:11px;padding:6px 12px}#ui span{font-size:15px}}
 </style>
 </head>
 <body>
 <div class="game-wrapper">
   <canvas id="c"></canvas>
-  <div id="ui">SCORE: <span>0</span><br>BEST: 0<br>LAST: 0</div>
+  <div id="ui">SCORE: <span>0</span><br>BEST: 0<br>LAST: 0<br>❤️ 1</div>
   <div class="multiplier-indicator" id="multiplierDisplay">x1.0</div>
+  <button id="settingsBtn">⚙️</button>
   <div id="overlay"><div id="panel"><h1>GAME OVER</h1><div id="finalScore"></div><div class="leaderboard" id="leaderboardDiv"></div><button id="restartBtn">RESTART</button></div></div>
+  <div id="settingsOverlay"><div class="settings-box"><h2>Настройки</h2><label>Чувствительность: <span id="sensValue">3000</span></label><input type="range" id="sensitivitySlider" min="1500" max="4500" step="50" value="3000"><button id="saveSettings">Сохранить</button><button id="closeSettings">Назад</button></div></div>
 </div>
 <script>
 (function(){
@@ -43,6 +53,16 @@
   const restartBtn = document.getElementById('restartBtn');
   const finalScoreDiv = document.getElementById('finalScore');
   const multiplierDisplay = document.getElementById('multiplierDisplay');
+  const settingsOverlay = document.getElementById('settingsOverlay');
+  const sensitivitySlider = document.getElementById('sensitivitySlider');
+  const sensValue = document.getElementById('sensValue');
+  const saveSettings = document.getElementById('saveSettings');
+  const closeSettings = document.getElementById('closeSettings');
+  const settingsBtn = document.getElementById('settingsBtn');
+  
+  let sens = parseInt(localStorage.getItem('sensitivity')) || 3000;
+  sensitivitySlider.value = sens;
+  sensValue.innerText = sens;
   
   let W = window.innerWidth, H = window.innerHeight;
   const dpr = window.devicePixelRatio || 1;
@@ -65,7 +85,6 @@
   window.addEventListener('keyup', e => keys[e.key] = false);
   
   let targetX = null;
-  
   c.addEventListener('touchstart', (e) => {
     e.preventDefault();
     const rect = c.getBoundingClientRect();
@@ -75,7 +94,6 @@
     if(cx > rect.right) cx = rect.right;
     targetX = (cx - rect.left) * scaleX;
   });
-  
   c.addEventListener('touchmove', (e) => {
     e.preventDefault();
     const rect = c.getBoundingClientRect();
@@ -85,16 +103,14 @@
     if(cx > rect.right) cx = rect.right;
     targetX = (cx - rect.left) * scaleX;
   });
-  
-  c.addEventListener('touchend', () => {
-    targetX = null;
-  });
+  c.addEventListener('touchend', () => targetX = null);
   
   let player, enemies, powers, effects, trails, stars;
   let score = 0, mult = 1, hitStop = 0, slowFactor = 1, difficulty = 1;
   let enemySlowActive = false, enemySlowTimer = 0;
   let running = true;
   let lastScore = 0;
+  let lives = 1;
   let best = parseInt(localStorage.getItem('best')) || 0;
   let leaderboard = JSON.parse(localStorage.getItem('leaderboard')) || [];
   let repelActive = false, repelTimer = 0;
@@ -127,15 +143,15 @@
     if(!running) return;
     let spd = (120 + Math.random() * 140) * (difficulty || 1);
     if(enemySlowActive) spd *= 0.35;
-    let e = { x: Math.random() * W, y: -20, r: 12, s: spd };
-    if(Math.random() > 0.8){ e.type = 'zigzag'; e.t = Math.random() * 10; e.r = 14; }
-    if(Math.random() > 0.94){ e.type = 'chaser'; e.r = 13; }
+    let e = { x: Math.random() * W, y: -30, r: 14, s: spd };
+    if(Math.random() > 0.8){ e.type = 'zigzag'; e.t = Math.random() * 10; e.r = 16; }
+    if(Math.random() > 0.94){ e.type = 'chaser'; e.r = 15; }
     enemies.push(e);
   }
   function spawnPower(){
     if(!running) return;
-    const types = ['shield','score','mult','magnet','slow','repel','enemySlow'];
-    powers.push({ x: Math.random() * W, y: -20, r: 10, s: 110, type: types[Math.floor(Math.random() * types.length)] });
+    const types = ['shield','score','mult','magnet','slow','repel','enemySlow','life'];
+    powers.push({ x: Math.random() * W, y: -25, r: 12, s: 110, type: types[Math.floor(Math.random() * types.length)] });
   }
   function startGame(){
     player = { x: W/2, y: H - 70, vx: 0, shield: 0, magnet: 0 };
@@ -152,6 +168,7 @@
     difficulty = 1;
     running = true;
     lastScore = 0;
+    lives = 1;
     repelActive = false;
     repelTimer = 0;
     enemySlowActive = false;
@@ -176,6 +193,119 @@
   overlay.addEventListener('click', restartGame);
   function dist(a,b){ return Math.hypot(a.x - b.x, a.y - b.y); }
   
+  // === ИКОНОЧНЫЕ ФУНКЦИИ ===
+  function drawMeteor(x,y,r,type){
+    ctx.save();
+    ctx.shadowBlur = 0;
+    ctx.beginPath();
+    ctx.arc(x,y,r,0,Math.PI*2);
+    let grad = ctx.createRadialGradient(x-3,y-3,3,x,y,r);
+    grad.addColorStop(0,type==='chaser'?'#b84c8c':(type==='zigzag'?'#cc6644':'#777777'));
+    grad.addColorStop(1,'#222222');
+    ctx.fillStyle = grad;
+    ctx.fill();
+    for(let i=0;i<5;i++){
+      let ang = Math.random()*Math.PI*2;
+      let rad = Math.random()*r*0.6;
+      ctx.beginPath();
+      ctx.arc(x+Math.cos(ang)*rad*0.8, y+Math.sin(ang)*rad*0.8, r*0.2, 0, Math.PI*2);
+      ctx.fillStyle = '#331100';
+      ctx.fill();
+    }
+    if(type==='zigzag'){
+      ctx.beginPath();
+      ctx.moveTo(x-r*0.6,y-r*0.4);
+      ctx.lineTo(x+r*0.6,y-r*0.4);
+      ctx.lineTo(x,y+r*0.6);
+      ctx.fillStyle = '#dd8844';
+      ctx.fill();
+    }
+    if(type==='chaser'){
+      ctx.fillStyle = '#ff66cc';
+      ctx.beginPath();
+      ctx.arc(x-3,y-3,3,0,Math.PI*2);
+      ctx.fill();
+      ctx.fillStyle = 'white';
+      ctx.beginPath();
+      ctx.arc(x-4,y-4,1,0,Math.PI*2);
+      ctx.fill();
+    }
+    ctx.restore();
+  }
+  
+  function drawShieldIcon(x,y){
+    ctx.beginPath();
+    ctx.moveTo(x,y-8);
+    ctx.lineTo(x+8,y-2);
+    ctx.lineTo(x+4,y+6);
+    ctx.lineTo(x-4,y+6);
+    ctx.lineTo(x-8,y-2);
+    ctx.fillStyle = '#33ccff';
+    ctx.fill();
+    ctx.fillStyle = 'white';
+    ctx.font = 'bold 12px monospace';
+    ctx.fillText('S',x-4,y);
+  }
+  function drawMultIcon(x,y){
+    ctx.fillStyle = '#ffdd88';
+    ctx.font = 'bold 20px monospace';
+    ctx.fillText('x2',x-7,y+6);
+  }
+  function drawMagnetIcon(x,y){
+    ctx.beginPath();
+    ctx.arc(x-5,y,5,0,Math.PI*2,true);
+    ctx.arc(x+5,y,5,0,Math.PI*2,true);
+    ctx.fillStyle = '#ff66ff';
+    ctx.fill();
+    ctx.fillRect(x-5,y-2,10,4);
+  }
+  function drawSlowIcon(x,y){
+    ctx.fillStyle = '#ffcc44';
+    ctx.font = 'bold 18px monospace';
+    ctx.fillText('🐌',x-7,y+6);
+  }
+  function drawRepelIcon(x,y){
+    ctx.beginPath();
+    ctx.moveTo(x,y-8);
+    ctx.lineTo(x+8,y);
+    ctx.lineTo(x,y+8);
+    ctx.lineTo(x-8,y);
+    ctx.fillStyle = '#ffffff';
+    ctx.fill();
+  }
+  function drawEnemySlowIcon(x,y){
+    ctx.fillStyle = '#6688ff';
+    ctx.font = 'bold 18px monospace';
+    ctx.fillText('⏳',x-7,y+6);
+  }
+  function drawLifeIcon(x,y){
+    ctx.fillStyle = '#ff5555';
+    ctx.beginPath();
+    ctx.moveTo(x,y-4);
+    ctx.bezierCurveTo(x-4,y-8,x-8,y-2,x,y+4);
+    ctx.bezierCurveTo(x+8,y-2,x+4,y-8,x,y-4);
+    ctx.fill();
+  }
+  function drawScoreIcon(x,y){
+    ctx.fillStyle = '#66ff66';
+    ctx.font = 'bold 18px monospace';
+    ctx.fillText('⭐',x-7,y+6);
+  }
+  
+  function drawPowerup(x,y,type){
+    ctx.save();
+    ctx.shadowBlur = 0;
+    if(type==='shield') drawShieldIcon(x,y);
+    else if(type==='mult') drawMultIcon(x,y);
+    else if(type==='magnet') drawMagnetIcon(x,y);
+    else if(type==='slow') drawSlowIcon(x,y);
+    else if(type==='repel') drawRepelIcon(x,y);
+    else if(type==='enemySlow') drawEnemySlowIcon(x,y);
+    else if(type==='life') drawLifeIcon(x,y);
+    else if(type==='score') drawScoreIcon(x,y);
+    ctx.restore();
+  }
+  
   function update(dt){
     if(hitStop > 0){ hitStop -= dt; return; }
     if(!running) return;
@@ -187,7 +317,6 @@
     if(repelActive){ repelTimer -= dt; if(repelTimer <= 0) repelActive = false; }
     if(enemySlowActive){ enemySlowTimer -= dt; if(enemySlowTimer <= 0) enemySlowActive = false; }
     
-    // ========== УПРАВЛЕНИЕ КАК В ПЕРВОЙ ВЕРСИИ ==========
     if(targetX !== null) {
         let dx = targetX - player.x;
         player.vx += dx * 7 * dt;
@@ -195,7 +324,7 @@
         let move = 0;
         if(keys['ArrowLeft']) move = -1;
         if(keys['ArrowRight']) move = 1;
-        player.vx += move * 2200 * dt;
+        player.vx += move * sens * dt;
     }
     player.vx *= 0.85;
     player.vx = Math.max(-520, Math.min(520, player.vx));
@@ -216,13 +345,21 @@
         e.x += Math.cos(ang) * force * dt;
         e.y += Math.sin(ang) * force * dt;
       }
-      if(dist(player, e) < e.r + 15){
+      if(dist(player, e) < e.r + 12){
         if(player.shield > 0){
           e.dead = true;
           hitStop = 0.05;
           if(navigator.vibrate) navigator.vibrate(30);
           effects.push({ x: player.x, y: player.y, text: 'SHIELD', life: 0.5 });
-        } else { gameOver(); }
+        } else if(lives > 1) {
+          lives--;
+          e.dead = true;
+          hitStop = 0.1;
+          effects.push({ x: player.x, y: player.y, text: '-1 LIFE', life: 0.8 });
+          if(navigator.vibrate) navigator.vibrate(50);
+        } else {
+          gameOver();
+        }
       }
       if(Math.random() < 0.2) trails.push({ x: e.x, y: e.y, r: e.r-2, life: 0.2, color: '#ff5a7e' });
     }
@@ -232,15 +369,16 @@
       const p = powers[i];
       p.y += p.s * dt * slowFactor;
       if(player.magnet > 0) p.x += (player.x - p.x) * dt * 5;
-      if(dist(player, p) < p.r + 18){
+      if(dist(player, p) < p.r + 12){
         let txt = '';
         if(p.type === 'shield'){ player.shield = 2.6; txt = 'SHIELD'; }
         if(p.type === 'mult'){ mult += 0.5; txt = 'x2 MULT'; }
         if(p.type === 'magnet'){ player.magnet = 4.2; txt = 'MAGNET'; }
         if(p.type === 'slow'){ slowFactor = 0.5; setTimeout(()=>{ if(slowFactor===0.5) slowFactor=1; },2500); txt = 'SLOW TIME'; }
         if(p.type === 'score'){ const b = 130 * mult; score += b; txt = `+${Math.floor(b)}`; }
-        if(p.type === 'repel'){ repelActive = true; repelTimer = 4.7; txt = 'REPEL'; effects.push({ x: player.x, y: player.y-18, text: 'REPEL ACTIVE', life: 0.7 }); }
+        if(p.type === 'repel'){ repelActive = true; repelTimer = 4.7; txt = 'REPEL'; effects.push({ x: player.x, y: player.y-18, text: 'REPEL', life: 0.7 }); }
         if(p.type === 'enemySlow'){ enemySlowActive = true; enemySlowTimer = 3.8; txt = 'ENEMY SLOW'; effects.push({ x: player.x, y: player.y-18, text: 'SLOW ENEMIES', life: 0.7 }); }
+        if(p.type === 'life'){ if(lives < 2) lives = 2; txt = '+1 LIFE'; effects.push({ x: player.x, y: player.y-18, text: 'EXTRA LIFE', life: 0.8 }); }
         effects.push({ x: player.x, y: player.y, text: txt, life: 0.9 });
         p.dead = true;
       }
@@ -255,6 +393,7 @@
     multiplierDisplay.style.transform = `scale(${1+Math.sin(Date.now()*0.025)*0.05})`;
     multiplierDisplay.style.color = mult>2 ? '#ff6644' : (mult>1.5 ? '#ffaa44' : '#ffdd88');
     multiplierDisplay.innerHTML = `x${mult.toFixed(1)}`;
+    ui.innerHTML = `SCORE: <span>${Math.floor(score)}</span><br>BEST: ${best}<br>LAST: ${lastScore||0}<br>❤️ ${lives}`;
   }
   
   function circle(x,y,r,c){
@@ -343,18 +482,15 @@
     circle(player.x, player.y, 15, '#00ff9c');
     ctx.shadowBlur = 0;
     drawIndicators();
-    for(let e of enemies) circle(e.x, e.y, e.r, '#ff4d6d');
-    for(let p of powers){
-      const col = { shield:'#00e5ff', mult:'#fff', magnet:'#ff66ff', slow:'#ffcc44', score:'#66ff66', repel:'#ffffff', enemySlow:'#88aaff' }[p.type];
-      circle(p.x, p.y, p.r, col);
-    }
+    for(let e of enemies) drawMeteor(e.x, e.y, e.r, e.type);
+    for(let p of powers) drawPowerup(p.x, p.y, p.type);
     for(let e of effects){
       ctx.font = "bold 16px 'Orbitron', monospace";
       ctx.fillStyle = `rgba(255,255,180,${e.life})`;
       ctx.fillText(e.text, e.x-35, e.y-10);
     }
     ctx.globalCompositeOperation = 'source-over';
-    ui.innerHTML = `SCORE: <span>${Math.floor(score)}</span><br>BEST: ${best}<br>LAST: ${lastScore||0}`;
+    ui.innerHTML = `SCORE: <span>${Math.floor(score)}</span><br>BEST: ${best}<br>LAST: ${lastScore||0}<br>❤️ ${lives}`;
   }
   
   let lastTime = 0;
@@ -375,6 +511,15 @@
       navigator.serviceWorker.register('/arcade/sw.js').then(reg => console.log('SW ok', reg)).catch(e => console.log('SW err', e));
     });
   }
+  
+  settingsBtn.onclick = () => { settingsOverlay.style.display = 'flex'; };
+  closeSettings.onclick = () => { settingsOverlay.style.display = 'none'; };
+  sensitivitySlider.oninput = () => { sensValue.innerText = sensitivitySlider.value; };
+  saveSettings.onclick = () => {
+    sens = parseInt(sensitivitySlider.value);
+    localStorage.setItem('sensitivity', sens);
+    settingsOverlay.style.display = 'none';
+  };
 })();
 </script>
 </body>
