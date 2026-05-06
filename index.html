@@ -187,20 +187,18 @@
     if(repelActive){ repelTimer -= dt; if(repelTimer <= 0) repelActive = false; }
     if(enemySlowActive){ enemySlowTimer -= dt; if(enemySlowTimer <= 0) enemySlowActive = false; }
     
-    // ========== УПРАВЛЕНИЕ: ПЛАВНОЕ, НО БЕЗ ТЕЛЕПОРТОВ ==========
+    // ========== ОПТИМАЛЬНОЕ УПРАВЛЕНИЕ ==========
     if(targetX !== null) {
-      let dx = targetX - player.x;
-      let maxDelta = 25; // максимум пикселей за кадр (1500 в секунду при 60fps)
-      dx = Math.max(-maxDelta, Math.min(maxDelta, dx));
-      player.x += dx;
+        let dx = targetX - player.x;
+        let speed = Math.min(35, Math.abs(dx) * 0.6);
+        if (dx > 0) player.x += speed;
+        if (dx < 0) player.x -= speed;
     } else {
-      let move = 0;
-      if(keys['ArrowLeft']) move = -1;
-      if(keys['ArrowRight']) move = 1;
-      player.x += move * 450 * dt;
+        let move = 0;
+        if(keys['ArrowLeft']) move = -1;
+        if(keys['ArrowRight']) move = 1;
+        player.x += move * 500 * dt;
     }
-    
-    // Границы
     player.x = Math.max(24, Math.min(W - 24, player.x));
     
     if(Math.random() < 0.4) trails.push({ x: player.x, y: player.y, r: 7, life: 0.3, color: '#00ff9c' });
