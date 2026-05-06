@@ -195,7 +195,7 @@
         let move = 0;
         if(keys['ArrowLeft']) move = -1;
         if(keys['ArrowRight']) move = 1;
-        player.vx += move * 1800 * dt;
+        player.vx += move * 2200 * dt;
     }
     player.vx *= 0.85;
     player.vx = Math.max(-520, Math.min(520, player.vx));
