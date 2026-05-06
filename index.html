@@ -51,7 +51,7 @@
   <button id="settingsBtn">⚙️</button>
   <button id="pauseBtn">⏸</button>
   <div id="overlay"><div id="panel"><h1>GAME OVER</h1><div id="finalScore"></div><div class="leaderboard" id="leaderboardDiv"></div><button id="restartBtn">RESTART</button></div></div>
-  <div id="settingsOverlay"><div class="settings-box"><h2>Настройки</h2><label>Чувствительность: <span id="sensValue">4000</span></label><input type="range" id="sensitivitySlider" min="3000" max="5000" step="50" value="4000"><button id="saveSettings">Сохранить</button><button id="closeSettings">Назад</button></div></div>
+  <div id="settingsOverlay"><div class="settings-box"><h2>Настройки</h2><label>Чувствительность (клавиатура): <span id="sensValue">4000</span></label><input type="range" id="sensitivitySlider" min="3000" max="5000" step="50" value="4000"><button id="saveSettings">Сохранить</button><button id="closeSettings">Назад</button></div></div>
   <div id="onboarding"><div class="onboarding-box"><h2>✨ КАК ИГРАТЬ ✨</h2><div class="onboarding-grid"><div class="onboarding-item"><span>🌑</span><span>Уворачивайся</span></div><div class="onboarding-item"><span>🛡️</span><span>Щит — защита</span></div><div class="onboarding-item"><span>⭐</span><span>Множитель x2</span></div><div class="onboarding-item"><span>🧲</span><span>Магнит</span></div><div class="onboarding-item"><span>🐌</span><span>Замедление</span></div><div class="onboarding-item"><span>💨</span><span>Отбрасывание</span></div><div class="onboarding-item"><span>⏳</span><span>Slow врагов</span></div><div class="onboarding-item"><span>❤️</span><span>Доп. жизнь</span></div><div class="onboarding-item"><span>💣</span><span>Бомба</span></div><div class="onboarding-item"><span>💰</span><span>Бонус очки</span></div></div><button id="onboardingPlayBtn">🚀 ИГРАТЬ</button></div></div>
 </div>
 <script>
@@ -100,6 +100,7 @@
   window.addEventListener('keyup', e => keys[e.key] = false);
   
   let targetX = null;
+  let rawTargetX = null; // для доворота до края
   c.addEventListener('touchstart', (e) => {
     if(!running || paused) return;
     e.preventDefault();
@@ -109,6 +110,7 @@
     if(cx < rect.left) cx = rect.left;
     if(cx > rect.right) cx = rect.right;
     targetX = (cx - rect.left) * scaleX;
+    rawTargetX = targetX;
   });
   c.addEventListener('touchmove', (e) => {
     if(!running || paused) return;
@@ -119,8 +121,9 @@
     if(cx < rect.left) cx = rect.left;
     if(cx > rect.right) cx = rect.right;
     targetX = (cx - rect.left) * scaleX;
+    rawTargetX = targetX;
   });
-  c.addEventListener('touchend', () => { targetX = null; });
+  c.addEventListener('touchend', () => { targetX = null; rawTargetX = null; });
   
   let player, enemies, powers, effects, trails, stars;
   let score = 0, mult = 1, hitStop = 0, slowFactor = 1, difficulty = 1;
@@ -265,21 +268,22 @@
     if(repelActive){ repelTimer -= dt; if(repelTimer <= 0) repelActive = false; }
     if(enemySlowActive){ enemySlowTimer -= dt; if(enemySlowTimer <= 0) enemySlowActive = false; }
     
-    // СИММЕТРИЧНОЕ УПРАВЛЕНИЕ: сила зависит только от позиции пальца НА ЭКРАНЕ
+    // ОРИГИНАЛЬНОЕ УПРАВЛЕНИЕ (как в первой версии) + доворот до края
     if(targetX !== null) {
-        let normalizedPos = targetX / W; // от 0 (левый край) до 1 (правый край)
-        let direction = 0;
-        let force = 0;
-        if (normalizedPos < 0.45) {
-            direction = -1;
-            force = (0.45 - normalizedPos) / 0.45;
-        } else if (normalizedPos > 0.55) {
-            direction = 1;
-            force = (normalizedPos - 0.55) / 0.45;
+        let dx = targetX - player.x;
+        player.vx += dx * 7 * dt;
+        
+        // доворот до края: если палец удерживается у левого или правого края
+        let edgeThreshold = 60; // зона у края 60px
+        if(rawTargetX !== null) {
+            if(rawTargetX < edgeThreshold && player.x > 24) {
+                // доворот влево
+                player.vx -= 180 * dt;
+            } else if(rawTargetX > W - edgeThreshold && player.x < W - 24) {
+                // доворот вправо
+                player.vx += 180 * dt;
+            }
         }
-        force = Math.min(1, force);
-        let accelerationForce = force * (sens / 400) * 1800;
-        player.vx += direction * accelerationForce * dt;
     } else {
         let move = 0;
         if(keys['ArrowLeft']) move = -1;
@@ -288,7 +292,7 @@
     }
     
     player.vx *= 0.85;
-    player.vx = Math.max(-800, Math.min(800, player.vx));
+    player.vx = Math.max(-520, Math.min(520, player.vx));
     player.x += player.vx * dt;
     player.x = Math.max(24, Math.min(W - 24, player.x));
     
