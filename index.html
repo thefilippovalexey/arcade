@@ -143,15 +143,15 @@
     if(!running) return;
     let spd = (120 + Math.random() * 140) * (difficulty || 1);
     if(enemySlowActive) spd *= 0.35;
-    let e = { x: Math.random() * W, y: -30, r: 14, s: spd };
+    let e = { x: Math.random() * W, y: -30, r: 16, s: spd };
     if(Math.random() > 0.8){ e.type = 'zigzag'; e.t = Math.random() * 10; e.r = 16; }
-    if(Math.random() > 0.94){ e.type = 'chaser'; e.r = 15; }
+    if(Math.random() > 0.94){ e.type = 'chaser'; e.r = 16; }
     enemies.push(e);
   }
   function spawnPower(){
     if(!running) return;
     const types = ['shield','score','mult','magnet','slow','repel','enemySlow','life'];
-    powers.push({ x: Math.random() * W, y: -25, r: 12, s: 110, type: types[Math.floor(Math.random() * types.length)] });
+    powers.push({ x: Math.random() * W, y: -25, r: 14, s: 110, type: types[Math.floor(Math.random() * types.length)] });
   }
   function startGame(){
     player = { x: W/2, y: H - 70, vx: 0, shield: 0, magnet: 0 };
@@ -193,116 +193,38 @@
   overlay.addEventListener('click', restartGame);
   function dist(a,b){ return Math.hypot(a.x - b.x, a.y - b.y); }
   
-  // === ИКОНОЧНЫЕ ФУНКЦИИ ===
-  function drawMeteor(x,y,r,type){
+  function drawEnemy(x,y,r){
     ctx.save();
     ctx.shadowBlur = 0;
-    ctx.beginPath();
-    ctx.arc(x,y,r,0,Math.PI*2);
-    let grad = ctx.createRadialGradient(x-3,y-3,3,x,y,r);
-    grad.addColorStop(0,type==='chaser'?'#b84c8c':(type==='zigzag'?'#cc6644':'#777777'));
-    grad.addColorStop(1,'#222222');
-    ctx.fillStyle = grad;
-    ctx.fill();
-    for(let i=0;i<5;i++){
-      let ang = Math.random()*Math.PI*2;
-      let rad = Math.random()*r*0.6;
-      ctx.beginPath();
-      ctx.arc(x+Math.cos(ang)*rad*0.8, y+Math.sin(ang)*rad*0.8, r*0.2, 0, Math.PI*2);
-      ctx.fillStyle = '#331100';
-      ctx.fill();
-    }
-    if(type==='zigzag'){
-      ctx.beginPath();
-      ctx.moveTo(x-r*0.6,y-r*0.4);
-      ctx.lineTo(x+r*0.6,y-r*0.4);
-      ctx.lineTo(x,y+r*0.6);
-      ctx.fillStyle = '#dd8844';
-      ctx.fill();
-    }
-    if(type==='chaser'){
-      ctx.fillStyle = '#ff66cc';
-      ctx.beginPath();
-      ctx.arc(x-3,y-3,3,0,Math.PI*2);
-      ctx.fill();
-      ctx.fillStyle = 'white';
-      ctx.beginPath();
-      ctx.arc(x-4,y-4,1,0,Math.PI*2);
-      ctx.fill();
-    }
+    ctx.font = `${r*1.4}px "Segoe UI Emoji"`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = '#ddccaa';
+    ctx.fillText('🌑', x, y);
     ctx.restore();
-  }
-  
-  function drawShieldIcon(x,y){
-    ctx.beginPath();
-    ctx.moveTo(x,y-8);
-    ctx.lineTo(x+8,y-2);
-    ctx.lineTo(x+4,y+6);
-    ctx.lineTo(x-4,y+6);
-    ctx.lineTo(x-8,y-2);
-    ctx.fillStyle = '#33ccff';
-    ctx.fill();
-    ctx.fillStyle = 'white';
-    ctx.font = 'bold 12px monospace';
-    ctx.fillText('S',x-4,y);
-  }
-  function drawMultIcon(x,y){
-    ctx.fillStyle = '#ffdd88';
-    ctx.font = 'bold 20px monospace';
-    ctx.fillText('x2',x-7,y+6);
-  }
-  function drawMagnetIcon(x,y){
-    ctx.beginPath();
-    ctx.arc(x-5,y,5,0,Math.PI*2,true);
-    ctx.arc(x+5,y,5,0,Math.PI*2,true);
-    ctx.fillStyle = '#ff66ff';
-    ctx.fill();
-    ctx.fillRect(x-5,y-2,10,4);
-  }
-  function drawSlowIcon(x,y){
-    ctx.fillStyle = '#ffcc44';
-    ctx.font = 'bold 18px monospace';
-    ctx.fillText('🐌',x-7,y+6);
-  }
-  function drawRepelIcon(x,y){
-    ctx.beginPath();
-    ctx.moveTo(x,y-8);
-    ctx.lineTo(x+8,y);
-    ctx.lineTo(x,y+8);
-    ctx.lineTo(x-8,y);
-    ctx.fillStyle = '#ffffff';
-    ctx.fill();
-  }
-  function drawEnemySlowIcon(x,y){
-    ctx.fillStyle = '#6688ff';
-    ctx.font = 'bold 18px monospace';
-    ctx.fillText('⏳',x-7,y+6);
-  }
-  function drawLifeIcon(x,y){
-    ctx.fillStyle = '#ff5555';
-    ctx.beginPath();
-    ctx.moveTo(x,y-4);
-    ctx.bezierCurveTo(x-4,y-8,x-8,y-2,x,y+4);
-    ctx.bezierCurveTo(x+8,y-2,x+4,y-8,x,y-4);
-    ctx.fill();
-  }
-  function drawScoreIcon(x,y){
-    ctx.fillStyle = '#66ff66';
-    ctx.font = 'bold 18px monospace';
-    ctx.fillText('⭐',x-7,y+6);
   }
   
   function drawPowerup(x,y,type){
     ctx.save();
     ctx.shadowBlur = 0;
-    if(type==='shield') drawShieldIcon(x,y);
-    else if(type==='mult') drawMultIcon(x,y);
-    else if(type==='magnet') drawMagnetIcon(x,y);
-    else if(type==='slow') drawSlowIcon(x,y);
-    else if(type==='repel') drawRepelIcon(x,y);
-    else if(type==='enemySlow') drawEnemySlowIcon(x,y);
-    else if(type==='life') drawLifeIcon(x,y);
-    else if(type==='score') drawScoreIcon(x,y);
+    ctx.beginPath();
+    ctx.arc(x,y,13,0,Math.PI*2);
+    ctx.fillStyle = '#1a2a33';
+    ctx.fill();
+    ctx.font = '22px "Segoe UI Emoji"';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    let emoji = '';
+    if(type==='shield') emoji = '🛡️';
+    else if(type==='mult') emoji = '⭐';
+    else if(type==='magnet') emoji = '🧲';
+    else if(type==='slow') emoji = '🐌';
+    else if(type==='repel') emoji = '💨';
+    else if(type==='enemySlow') emoji = '⏳';
+    else if(type==='life') emoji = '❤️';
+    else if(type==='score') emoji = '💰';
+    ctx.fillStyle = '#ffffff';
+    ctx.fillText(emoji, x, y);
     ctx.restore();
   }
   
@@ -345,7 +267,7 @@
         e.x += Math.cos(ang) * force * dt;
         e.y += Math.sin(ang) * force * dt;
       }
-      if(dist(player, e) < e.r + 12){
+      if(dist(player, e) < e.r + 10){
         if(player.shield > 0){
           e.dead = true;
           hitStop = 0.05;
@@ -369,7 +291,7 @@
       const p = powers[i];
       p.y += p.s * dt * slowFactor;
       if(player.magnet > 0) p.x += (player.x - p.x) * dt * 5;
-      if(dist(player, p) < p.r + 12){
+      if(dist(player, p) < p.r + 10){
         let txt = '';
         if(p.type === 'shield'){ player.shield = 2.6; txt = 'SHIELD'; }
         if(p.type === 'mult'){ mult += 0.5; txt = 'x2 MULT'; }
@@ -482,7 +404,7 @@
     circle(player.x, player.y, 15, '#00ff9c');
     ctx.shadowBlur = 0;
     drawIndicators();
-    for(let e of enemies) drawMeteor(e.x, e.y, e.r, e.type);
+    for(let e of enemies) drawEnemy(e.x, e.y, e.r);
     for(let p of powers) drawPowerup(p.x, p.y, p.type);
     for(let e of effects){
       ctx.font = "bold 16px 'Orbitron', monospace";
