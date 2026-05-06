@@ -1,4 +1,4 @@
-const CACHE_NAME = 'arcade-shmup-v2';
+const CACHE_NAME = 'arcade-shmup-v3';
 const urlsToCache = [
   '/arcade/',
   '/arcade/index.html',
@@ -25,8 +25,7 @@ self.addEventListener('fetch', event => {
           return response;
         }
         return fetch(event.request);
-      }
-    )
+      })
   );
 });
 
